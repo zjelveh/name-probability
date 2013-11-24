@@ -23,11 +23,6 @@ To make things a little easier, a Markovian assumption is made so that the n-th 
 
 ![equation](http://www.sciweavers.org/upload/Tex2Img_1385225220/eqn.png)
 
-The conditional probabilities are computed like this:
-
-![equation](http://www.sciweavers.org/upload/Tex2Img_1385226637/eqn.png)
-
-
 Training Data
 --------------
 

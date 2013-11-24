@@ -12,5 +12,23 @@ Example output:
 >>> 0.99999999999999689
 ```
 
-Of course, the above results depend on the training data. The data directory contains a list of 250,000 random names generated from Census and Social Security data. I'd highly recommend using a domain-specific list.
+Background
+-----------
 
+The probability of a name is computed as follows. Given a string of length n, the joint probabilty of the characters in the string can be broken down like this:
+
+![equation](http://www.sciweavers.org/upload/Tex2Img_1385225204/eqn.png)
+
+To make things a little easier, a Markovian assumption is made so that the n-th character in the string is only dependent on the k prior characters:
+
+![equation](http://www.sciweavers.org/upload/Tex2Img_1385225220/eqn.png)
+
+The conditional probabilities are computed like this:
+
+![equation](http://www.sciweavers.org/upload/Tex2Img_1385226637/eqn.png)
+
+
+Training Data
+--------------
+
+The conditional probabilities are computed using rouhgly 28 million names from the Social Security Death Master file.

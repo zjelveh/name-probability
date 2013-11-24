@@ -3,47 +3,83 @@ import os
 import re
 from collections import defaultdict
 import Levenshtein as edist
+from name_cleaver import IndividualNameCleaver as inc
+import pickle
+import sqlite3
 
 class NameProbability():
-    
-    def __init__(self, name_list, ngram_len=5, smoothing=.001):
+    def __init__(self, name_list = None, ngram_len = 5, smoothing = .001,
+                 standardize = False, unique = True, useSS = True):
         # smoothing factor
         self.smoothing = smoothing
-        self.name_list = np.array(name_list)
-        self.name_list = np.unique(self.name_list)
         self.ngram_count = defaultdict(int)
         self.edit_count = defaultdict(int)
         self.ngram_len = ngram_len
-        # crude measure of population size
-        self.pop_size = len(self.name_list)
         self.total_edits = 0
-
-        def ngramCount():
-            for name in self.name_list:
-                if len(name) > ngram_len - 1:
-                    for start in range(len(name)-(self.ngram_len-1)):
-                        self.ngram_count[name[start:(start+self.ngram_len)]] += 1
-                        self.ngram_count[name[start:((start+self.ngram_len)-1)]] += 1
-                    self.ngram_count[name[(start+1):(start+self.ngram_len)]] += 1
-
-        def editCounts():
-            # to compute probability of edit operations
-            # use a subsample of names
-            if len(self.name_list) < 1000:
-                name_samp = self.name_list
-            else:
-                name_samp = self.name_list[np.random.randint(0, len(self.name_list),
-                                                             1000)].tolist()
-            for name1 in range(len(name_samp)):
-                for name2 in range(len(name_samp[name1+1:])):
-                    edits = edist.editops(name_samp[name1],
-                                          name_samp[name2])
-                    self.total_edits += len(edits)
-                    for e in edits:
-                        self.edit_count[e] += 1
+        if useSS:
+            with open(os.path.join(os.path.dirname(__file__), 'data/ss_data.pickle')) as ss_data:
+                self.ngram_count, self.edit_count = pickle.load(ss_data)
+                self.pop_size = len(self.ngram_count.keys())
+                self.total_edits += sum(self.edit_count.values())
+        if name_list:
+            self.name_list = np.array(name_list)
+            if standardize:
+                self.standardizeNames(self.name_list)
+            if unique:
+                self.name_list = np.unique(self.name_list)
             
-        ngramCount()
-        editCounts()
+            # crude measure of population size
+            self.pop_size += self.name_list.shape[0]
+            self.ngramCount(self.name_list)
+            self.editCounts(self.name_list)
+
+    def standardizeNames(self,name_list):
+        for i in range(len(name_list)):
+            try:
+                temp = inc(name_list[i]).parse()
+                if name_list[i] != '':
+                    name_list[i] = temp.name_str().lower()
+            except:
+                print i,name_list[i]
+        return name_list
+
+    def ngramCount(self,name_list):
+        print 'ngramCount'
+        c = 0
+        for name in name_list:
+            c += 1
+            if c%10000==0:
+                print c
+            if len(name) > self.ngram_len - 1:
+                for start in range(len(name)-(self.ngram_len-1)):
+                    self.ngram_count[name[start:(start+self.ngram_len)]] += 1
+                    self.ngram_count[name[start:((start+self.ngram_len)-1)]] += 1
+                self.ngram_count[name[(start+1):(start+self.ngram_len)]] += 1
+
+    def updateCounts(self,name_list,standardize = False):
+        name_list = np.array(name_list)
+        if standardize:
+            name_list = self.standardizeNames(name_list)
+        name_list = np.unique(name_list)
+        self.pop_size += name_list.shape[0]
+        self.ngramCount(name_list)
+        self.editCounts(name_list)
+
+    def editCounts(self,name_list):
+        # to compute probability of edit operations
+        # use a subsample of names
+        if len(name_list) < 50000:
+            name_samp = name_list
+        else:
+            name_samp = name_list[np.random.randint(0, len(self.name_list),
+                                                         50000)].tolist()
+        for name1 in range(len(name_samp)):
+            for name2 in range(len(name_samp[name1+1:])):
+                edits = edist.editops(name_samp[name1],
+                                      name_samp[name2])
+                self.total_edits += len(edits)
+                for e in edits:
+                    self.edit_count[e] += 1
 
     def probName(self, name):
         # compute the probability of name based on the training data
@@ -89,7 +125,11 @@ class NameProbability():
 
     def surprisal(self, name):
         return -np.log2(self.probUnique(name))
-        
+
+    def loadRandom(self):
+        list_of_names = file(os.path.abspath('data/sample_names.csv')).read().split('\n')
+        self.updateCounts(list_of_names)
+        del list_of_names
+
 if __name__ == '__main__':
-    list_of_names = file(os.path.abspath('data/sample_names.csv')).read().split('\n')
-    name_prob = NameProbability(list_of_names)
+    pass

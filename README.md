@@ -1,7 +1,7 @@
 name-probability
 ================
 
-This repo implements the disambiguation methodology outlined in "<a href="http://planete.inrialpes.fr/papers/high_entropy.pdf">How Unique and Traceable are Usernames?</a>" to link users across platforms. 
+This repo implements the disambiguation methodology outlined in "<a href="http://planete.inrialpes.fr/papers/high_entropy.pdf">How Unique and Traceable are Usernames?</a>" to link users across platforms. While the paper is interested in usernames, I've typically used it as an additional feature in record linkage tasks -- for example, linking campaign contributions to employment data.
 
 Example output:
 
@@ -12,18 +12,11 @@ Example output:
 >>> 0.99999999999999689
 ```
 
-Background
------------
-
-The probability of a name is computed as follows. Given a string of length n, the joint probabilty of the characters in the string can be broken down like this:
-
-![equation](http://www.sciweavers.org/upload/Tex2Img_1385225204/eqn.png)
-
-To make things a little easier, a Markovian assumption is made so that the n-th character in the string is only dependent on the k prior characters:
-
-![equation](http://www.sciweavers.org/upload/Tex2Img_1385225220/eqn.png)
-
 Training Data
 --------------
 
-The conditional probabilities are computed using rouhgly 28 million names from the Social Security Death Master file.
+The conditional probabilities are computed using roughly 28 million names from the Social Security Death Master file with the obvious downside that newer names are under-represented.
+
+To-Dos
+--------------
+In order to compute P(u_1 | u_2) -- the probability person A uses name one given that person A uses name two -- we have to compute the probability of each edit operation that takes us from u_1 to u_2. The current implementation does this empirically by taking a sample of 50,000 names and counting the occurrence of each type of edit operation. This is time consuming and inelegant. Future versions should cache these results and/or come up with a better way of computing the probabilities.

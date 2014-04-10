@@ -7,6 +7,7 @@ from name_cleaver import IndividualNameCleaver as inc
 import pickle
 import sqlite3
 
+
 class NameProbability():
     def __init__(self, name_list = None, ngram_len = 5, smoothing = .001,
                  standardize = False, unique = True, useSS = True):
@@ -17,7 +18,8 @@ class NameProbability():
         self.ngram_len = ngram_len
         self.total_edits = 0
         if useSS:
-            with open(os.path.join(os.path.dirname(__file__), 'data/ss_data.pickle')) as ss_data:
+            with open('/Users/zubin/board-colors/name-probability/nameprobability/data/ss_data.pickle','rb') as ss_data: 
+##            with open(os.path.join(os.path.dirname(__file__), 'data/ss_data.pickle')) as ss_data:
                 self.ngram_count, self.edit_count = pickle.load(ss_data)
                 self.pop_size = len(self.ngram_count.keys())
                 self.total_edits += sum(self.edit_count.values())

@@ -5,12 +5,21 @@ This repo implements the disambiguation methodology outlined in "<a href="http:/
 
 Example output:
 
+
+Usage
+--------------
 ```python
->>> name_prob.probSamePerson('smith, john','smith, john r')
+>>> import nameprobability.NameProbability as nm
+>>> nameprob = nm.NameMatcher()
+Loading Social Security Data
+Done
+>>> nameprob.probSamePerson('smith, john','smith, john r')
 >>> 0.0029767677513424344
->>> name_prob.probSamePerson('jelveh, zubin','jelveh, zubin r')
+>>> nameprob.probSamePerson('jelveh, zubin','jelveh, zubin r')
 >>> 0.99999999999999689
 ```
+
+
 
 Training Data
 --------------

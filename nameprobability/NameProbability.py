@@ -6,7 +6,7 @@ from name_cleaver import IndividualNameCleaver as inc
 import cPickle
 
 
-class NameProbability():
+class NameMatcher():
     def __init__(self, name_list = None, ngram_len = 5, smoothing = .001,
                  standardize = False, unique = True, useSS = True):
         self.smoothing = smoothing

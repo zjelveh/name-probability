@@ -3,9 +3,6 @@ name-probability
 
 This repo implements the disambiguation methodology outlined in "<a href="http://planete.inrialpes.fr/papers/high_entropy.pdf">How Unique and Traceable are Usernames?</a>" to link users across platforms. While the paper is interested in usernames, I've typically used it as an additional feature in record linkage tasks -- for example, linking campaign contributions to employment data.
 
-Example output:
-
-
 Usage
 --------------
 ```python

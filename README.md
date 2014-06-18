@@ -16,7 +16,11 @@ Done
 >>> 0.99999999999999689
 ```
 
-
+Installation
+--------------
+```
+python setup.py install --user
+```
 
 Training Data
 --------------

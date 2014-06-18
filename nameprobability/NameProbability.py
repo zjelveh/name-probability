@@ -8,6 +8,9 @@ import cPickle
 class NameMatcher():
     def __init__(self, name_list=None, ngram_len=5, smoothing=.001,
                  standardizeType=None, unique=True, useSS=True):
+        '''
+        standardizeType can be set to 'Indiv' or 'Company'
+        '''
         self.smoothing = smoothing
         self.ngram_count = defaultdict(int)
         self.edit_count = defaultdict(int)

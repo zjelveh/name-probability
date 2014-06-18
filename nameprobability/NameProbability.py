@@ -4,12 +4,15 @@ from collections import defaultdict
 import Levenshtein as edist
 from name_cleaver import IndividualNameCleaver as indiv, OrganizationNameCleaver as company
 import cPickle
+from counter import _editCounts, _ngramCount
 
 class NameMatcher():
     def __init__(self, name_list=None, ngram_len=5, smoothing=.001,
-                 standardizeType=None, unique=True, useSS=True):
+                 standardizeType=None, unique=True, useSS=True, edit_count_max=None):
         '''
-        standardizeType can be set to 'Indiv' or 'Company'
+        - standardizeType can be set to 'Indiv' or 'Company'
+        - edit_count_max is used to limit the number of samples to consider 
+        when computing edit operation counts
         '''
         self.smoothing = smoothing
         self.ngram_count = defaultdict(int)
@@ -18,12 +21,14 @@ class NameMatcher():
         self.pop_size = 0
         self.total_edits = 0
         self.standardizeFunc = None
+        self.unique = unique
+        self.edit_count_max = edit_count_max
         self.DATA_PATH = os.path.join(os.path.split(__file__)[0], "data")
         
         if standardizeType == 'Indiv':
                 self.standardizeFunc = lambda name: indiv(name).parse(safe=True).name_str().lower()
         if standardizeType == 'Company':
-                self.standardizeFunc = lambda name: company(name).parse(safe=True).name_str().lower()
+                self.standardizeFunc = lambda name: company(name).parse(safe=True).name.lower()
                 
         if useSS:
             with open(os.path.join(self.DATA_PATH, 'ss_data.pkl'),'rb') as ss_data:
@@ -31,54 +36,47 @@ class NameMatcher():
                 self.ngram_count, self.edit_count = cPickle.load(ss_data)
                 self.pop_size = 24e6
                 self.total_edits += sum(self.edit_count.itervalues())
-                for k, v in self.edit_count.iteritems():
-                    self.edit_count[k] = v / float(self.total_edits)
                     
         if name_list:
             if not isinstance(name_list, list):
                 name_list = list(name_list)
-            self.name_list = [self.standardizeFunc(self.name) for name in name_list]
-            self.name_list = np.array(name_list)
-            if unique:
-                self.name_list = np.unique(self.name_list)
+            name_list = [self.standardizeFunc(name) for name in name_list]
+            if self.unique:
+                name_list = list(set(name_list))
 
             # crude measure of population size
-            self.pop_size += self.name_list.shape[0]
-            self.ngramCount(self.name_list)
+            self.pop_size += len(name_list)
+            self.ngramCount(name_list)
             print "Starting editCounts"
-            self.editCounts(self.name_list)
+            self.editCounts(name_list)
 
     def ngramCount(self, name_list):
-        for c, name in enumerate(name_list):
-            if len(name) > self.ngram_len - 1:
-                for start in range(len(name) - (self.ngram_len-1)):
-                    self.ngram_count[name[start:(start + self.ngram_len)]] += 1
-                    self.ngram_count[name[start:((start + self.ngram_len)-1)]] += 1
-                self.ngram_count[name[(start + 1):(start + self.ngram_len)]] += 1
-
+        ngram_count = _ngramCount(name_list, self.ngram_len)
+        for k, v in ngram_count.iteritems():
+            self.ngram_count[k] += v
+            
     def updateCounts(self, name_list):
-        name_list = np.array(name_list)
         if self.standardizeFunc:
             name_list = [self.standardizeFunc(name) for name in name_list]
-        name_list = np.unique(name_list)
-        self.pop_size += name_list.shape[0]
+        if self.unique:
+            name_list = list(set(name_list))
+        self.pop_size += len(name_list)
         self.ngramCount(name_list)
         self.editCounts(name_list)
     
     def editCounts(self, name_list):
         # to compute probability of edit operations use a subsample of names
-        if len(name_list) < 10000:
-            name_samp = name_list
+        if self.edit_count_max:
+            name_list = np.array(name_list)
+            name_samp = name_list[np.random.randint(0, len(name_list), 
+                                                    self.edit_count_max)].tolist()
         else:
-            name_samp = name_list[np.random.randint(0, len(self.name_list), 10000)].tolist()
-        for i, name1 in enumerate(name_samp):
-            for j in range(i + 1, len(name_samp)):
-                if i < j:
-                    edits = edist.editops(name1, name_samp[j])
-                    self.total_edits += len(edits)
-                    for e in edits:
-                        self.edit_count[e] += 1
-
+            name_samp = name_list
+        edit_count, total_edits = _editCounts(name_samp)
+        self.total_edits += total_edits
+        for k, v in edit_count.iteritems():
+            self.edit_count[k] += v
+                                
     def probName(self, name):
         if self.standardizeFunc:
             name = self.standardizeFunc(name)    
@@ -98,10 +96,13 @@ class NameMatcher():
     def condProbName(self, name1, name2):
         # computes the conditional probability of arriving at name1
         # by performing a series of operation on name2.
+        temp_count = {}
+        for k, v in self.edit_count.iteritems():
+            temp_count[k] = v / float(self.total_edits)
         if self.standardizeFunc:
             name1, name2 = map(self.standardizeFunc, [name1, name2])
         edits = edist.editops(name1, name2)
-        log_cnd_prob = sum(np.log(self.edit_count[e]) for e in edits)
+        log_cnd_prob = sum(np.log(temp_count[e] + self.smoothing) for e in edits)
         return np.exp(log_cnd_prob)
 
     def probSamePerson(self, name1, name2):
@@ -134,3 +135,5 @@ class NameMatcher():
 
 if __name__ == '__main__':
     pass
+
+    temp = NameProbability.NameMatcher(name_list=['abc company', 'bcd inc'], standardizeType='Company', useSS=False)

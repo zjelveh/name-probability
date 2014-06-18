@@ -27,6 +27,6 @@ Training Data
 
 The conditional probabilities are computed using roughly 28 million names from the Social Security Death Master file with the obvious downside that newer names are under-represented.
 
-To-Dos
+Edit Operation Probability
 --------------
-In order to compute P(u_1 | u_2) -- the probability person A uses name one given that person A uses name two -- we have to compute the probability of each edit operation that takes us from u_1 to u_2. The current implementation does this empirically by taking a sample of 50,000 names and counting the occurrence of each type of edit operation. This is time consuming and inelegant. Future versions should cache these results and/or come up with a better way of computing the probabilities.
+In order to compute P(u_1 | u_2) -- the probability person A uses name one given that person A uses name two -- we have to compute the probability of each edit operation that takes us from u_1 to u_2. The current implementation does this empirically by taking a sample of 50,000 names and counting the occurrence of each type of edit operation. Room for improvement here.

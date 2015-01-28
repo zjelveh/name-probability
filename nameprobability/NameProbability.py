@@ -40,7 +40,8 @@ class NameMatcher():
         if name_list:
             if not isinstance(name_list, list):
                 name_list = list(name_list)
-            name_list = [self.standardizeFunc(name) for name in name_list]
+            if standardizeType:
+                name_list = [self.standardizeFunc(name) for name in name_list]
             if self.unique:
                 name_list = list(set(name_list))
 

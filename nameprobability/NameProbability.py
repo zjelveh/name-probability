@@ -4,7 +4,7 @@ from collections import defaultdict
 import Levenshtein as edist
 from name_cleaver import IndividualNameCleaver as indiv, OrganizationNameCleaver as company
 import cPickle
-from counter import _editCounts, _ngramCount
+from counter import _editCounts, _ngramCount, _probName
 
 class NameMatcher():
     def __init__(self, name_list=None, ngram_len=5, smoothing=.001,
@@ -24,6 +24,7 @@ class NameMatcher():
         self.unique = unique
         self.edit_count_max = edit_count_max
         self.DATA_PATH = os.path.join(os.path.split(__file__)[0], "data")
+        self.memoize = {}
         
         if standardizeType == 'Indiv':
                 self.standardizeFunc = lambda name: indiv(name).parse(safe=True).name_str().lower()
@@ -83,16 +84,9 @@ class NameMatcher():
             name = self.standardizeFunc(name)    
         # compute the probability of name based on the training data
         if len(name) < self.ngram_len:
-            print 'name too short'
             return 0
-
-        log_prob = 0
-        for start in range(len(name) - (self.ngram_len - 1)):
-            numer = self.ngram_count[name[start:(start + self.ngram_len)]] + self.smoothing
-            denom = self.ngram_count[name[start:(start + self.ngram_len)-1]] + self.smoothing
-            log_prob += np.log(numer / denom)
-
-        return np.exp(log_prob)
+        pn, self.momoize = _probName(name, self.ngram_len, self.ngram_count, self.smoothing, self.memoize)
+        return pn
 
     def condProbName(self, name1, name2):
         # computes the conditional probability of arriving at name1

@@ -1,5 +1,6 @@
 import Levenshtein as edist
 import numpy as np
+cimport numpy as np
 from collections import defaultdict
 
 def _editCounts(name_samp):
@@ -23,7 +24,7 @@ def _editCounts(name_samp):
                 for k in range(lene):
                     edit_count[edits[k]] += 1
     return edit_count, total_edits
-    
+
 def _ngramCount(name_list, ngram_len):
     cdef int i
     cdef int start
@@ -35,3 +36,18 @@ def _ngramCount(name_list, ngram_len):
                 ngram_count[name_list[i][start:((start + ngram_len)-1)]] += 1
             ngram_count[name_list[i][(start + 1):(start + ngram_len)]] += 1
     return ngram_count
+    
+cpdef list _probName(str name, int ngram_len, ngram_count, float smoothing, dict memoize):
+    cdef float log_prob = 0.0
+    cdef float numer
+    cdef float denom
+    cdef int start
+    if name in memoize:
+        return [memoize[name], memoize]
+    else:
+        for start in range(len(name) - (ngram_len - 1)):
+            numer = ngram_count[name[start:(start + ngram_len)]] + smoothing
+            denom = ngram_count[name[start:(start + ngram_len)-1]] + smoothing
+            log_prob += np.log(numer / denom)
+        memoize[name] = np.exp(log_prob)
+        return [memoize[name], memoize]

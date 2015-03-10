@@ -11,7 +11,7 @@ class NameMatcher():
                  standardizeType=None, unique=True, useSS=True, edit_count_max=None):
         '''
         - standardizeType can be set to 'Indiv' or 'Company'
-        - edit_count_max is used to limit the number of samples to consider 
+        - edit_count_max is used to limit the number of samples to consider
         when computing edit operation counts
         '''
         self.smoothing = smoothing
@@ -26,19 +26,19 @@ class NameMatcher():
         self.DATA_PATH = os.path.join(os.path.split(__file__)[0], "data")
         self.memoize = {}
         self.cp_memoize = {}
-        self.psp_memoize = {}        
+        self.psp_memoize = {}
         if standardizeType == 'Indiv':
                 self.standardizeFunc = lambda name: indiv(name).parse(safe=True).name_str().lower()
         if standardizeType == 'Company':
                 self.standardizeFunc = lambda name: company(name).parse(safe=True).name.lower()
-                
+
         if useSS:
             with open(os.path.join(self.DATA_PATH, 'ss_data.pkl'),'rb') as ss_data:
                 print 'Loading Social Security Data'
                 self.ngram_count, self.edit_count = cPickle.load(ss_data)
                 self.pop_size = 24e6
                 self.total_edits += sum(self.edit_count.itervalues())
-                    
+
         if name_list:
             if not isinstance(name_list, list):
                 name_list = list(name_list)
@@ -57,7 +57,7 @@ class NameMatcher():
         ngram_count = _ngramCount(name_list, self.ngram_len)
         for k, v in ngram_count.iteritems():
             self.ngram_count[k] += v
-            
+
     def updateCounts(self, name_list):
         if self.standardizeFunc:
             name_list = [self.standardizeFunc(name) for name in name_list]
@@ -66,12 +66,12 @@ class NameMatcher():
         self.pop_size += len(name_list)
         self.ngramCount(name_list)
         self.editCounts(name_list)
-    
+
     def editCounts(self, name_list):
         # to compute probability of edit operations use a subsample of names
         if self.edit_count_max:
             name_list = np.array(name_list)
-            name_samp = name_list[np.random.randint(0, len(name_list), 
+            name_samp = name_list[np.random.randint(0, len(name_list),
                                                     self.edit_count_max)].tolist()
         else:
             name_samp = name_list
@@ -79,10 +79,10 @@ class NameMatcher():
         self.total_edits += total_edits
         for k, v in edit_count.iteritems():
             self.edit_count[k] += v
-                                
+
     def probName(self, name):
         if self.standardizeFunc:
-            name = self.standardizeFunc(name)    
+            name = self.standardizeFunc(name)
         # compute the probability of name based on the training data
         if len(name) < self.ngram_len:
             return 0
@@ -96,7 +96,7 @@ class NameMatcher():
         if self.standardizeFunc:
             name1, name2 = map(self.standardizeFunc, [name1, name2])
         if (name1, name2) not in self.cp_memoize:
-            self.cp_memoize = _condProbName(name1, name2, self.edit_count, self.total_edits, 
+            self.cp_memoize = _condProbName(name1, name2, self.edit_count, self.total_edits,
                                             self.smoothing, self.cp_memoize)
         return self.cp_memoize[(name1, name2)]
 
@@ -108,10 +108,12 @@ class NameMatcher():
             print 'Both names should be at least', self.ngram_len, ' characters long'
             return 0.0
         if (name1, name2) not in self.psp_memoize:
-            self.psp_memoize = _probSamePerson(name1, name2, self.pop_size, self.edit_count, 
-                           self.total_edits, self.smoothing, self.ngram_len, 
-                           self.ngram_count, self.memoize, self.cp_memoize, 
+            self.psp_memoize, self.cp_memoize, self.memoize = _probSamePerson(name1,
+                           name2, self.pop_size, self.edit_count,
+                           self.total_edits, self.smoothing, self.ngram_len,
+                           self.ngram_count, self.memoize, self.cp_memoize,
                            self.psp_memoize)
+        return self.psp_memoize[(name1, name2)]
 
     def probUnique(self, name):
         if self.standardizeFunc:

@@ -37,17 +37,42 @@ def _ngramCount(name_list, ngram_len):
             ngram_count[name_list[i][(start + 1):(start + ngram_len)]] += 1
     return ngram_count
     
-cpdef list _probName(str name, int ngram_len, ngram_count, float smoothing, dict memoize):
+cpdef dict _probName(str name, int ngram_len, dict ngram_count, float smoothing, 
+                     dict memoize):
     cdef float log_prob = 0.0
     cdef float numer
     cdef float denom
     cdef int start
-    if name in memoize:
-        return [memoize[name], memoize]
-    else:
-        for start in range(len(name) - (ngram_len - 1)):
-            numer = ngram_count[name[start:(start + ngram_len)]] + smoothing
-            denom = ngram_count[name[start:(start + ngram_len)-1]] + smoothing
-            log_prob += np.log(numer / denom)
-        memoize[name] = np.exp(log_prob)
-        return [memoize[name], memoize]
+    for start in range(len(name) - (ngram_len - 1)):
+        numer = ngram_count[name[start:(start + ngram_len)]] + smoothing
+        denom = ngram_count[name[start:(start + ngram_len)-1]] + smoothing
+        log_prob += np.log(numer / denom)
+    memoize[name] = np.exp(log_prob)
+    return memoize
+        
+
+cpdef dict _condProbName(str name1, str name2, dict edit_count, float total_edits, 
+                         float smoothing, dict cp_memoize):
+        # computes the conditional probability of arriving at name1
+        # by performing a series of operation on name2.
+        cdef dict temp_count = {}
+        cdef tuple e
+        for k, v in edit_count.iteritems():
+            temp_count[k] = v / total_edits
+        edits = edist.editops(name1, name2)
+        log_cnd_prob = np.sum(np.log(temp_count[e] + smoothing) for e in edits)
+        cp_memoize[(name1, name2)] = np.exp(log_cnd_prob)
+        return cp_memoize
+
+cpdef dict _probSamePerson(str name1, str name2, float pop_size, dict edit_count, 
+                           float total_edits, float smoothing, int ngram_len, 
+                           dict ngram_count, dict memoize, dict cp_memoize, 
+                           dict psp_memoize):
+    # computes the probability that the two names belong to the same person.
+    cdef float p1, p2, p2given1
+    p2given1 = _condProbName(name1, name2, edit_count, total_edits, smoothing, 
+                             cp_memoize)
+    p1 = _probName(name1, ngram_len, ngram_count, smoothing, memoize)
+    p2 = _probName(name2, ngram_len, ngram_count, smoothing, memoize)
+    psp_memoize[(name1, name2)] = (p1 * p2given1) / ((pop_size - 1.0) * p1 * p2 + p1 * p2given1)
+    return psp_memoize

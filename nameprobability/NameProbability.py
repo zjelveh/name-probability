@@ -4,7 +4,7 @@ from collections import defaultdict
 import Levenshtein as edist
 from name_cleaver import IndividualNameCleaver as indiv, OrganizationNameCleaver as company
 import cPickle
-from counter import _editCounts, _ngramCount, _probName
+from counter import _editCounts, _ngramCount, _probName, _condProbName, _probSamePerson
 
 class NameMatcher():
     def __init__(self, name_list=None, ngram_len=5, smoothing=.001,
@@ -25,7 +25,8 @@ class NameMatcher():
         self.edit_count_max = edit_count_max
         self.DATA_PATH = os.path.join(os.path.split(__file__)[0], "data")
         self.memoize = {}
-        
+        self.cp_memoize = {}
+        self.psp_memoize = {}        
         if standardizeType == 'Indiv':
                 self.standardizeFunc = lambda name: indiv(name).parse(safe=True).name_str().lower()
         if standardizeType == 'Company':
@@ -85,20 +86,19 @@ class NameMatcher():
         # compute the probability of name based on the training data
         if len(name) < self.ngram_len:
             return 0
-        pn, self.momoize = _probName(name, self.ngram_len, self.ngram_count, self.smoothing, self.memoize)
-        return pn
+        if name not in self.memoize:
+            self.memoize = _probName(name, self.ngram_len, self.ngram_count, self.smoothing, self.memoize)
+        return self.memoize[name]
 
     def condProbName(self, name1, name2):
         # computes the conditional probability of arriving at name1
         # by performing a series of operation on name2.
-        temp_count = {}
-        for k, v in self.edit_count.iteritems():
-            temp_count[k] = v / float(self.total_edits)
         if self.standardizeFunc:
             name1, name2 = map(self.standardizeFunc, [name1, name2])
-        edits = edist.editops(name1, name2)
-        log_cnd_prob = sum(np.log(temp_count[e] + self.smoothing) for e in edits)
-        return np.exp(log_cnd_prob)
+        if (name1, name2) not in self.cp_memoize:
+            self.cp_memoize = _condProbName(name1, name2, self.edit_count, self.total_edits, 
+                                            self.smoothing, self.cp_memoize)
+        return self.cp_memoize[(name1, name2)]
 
     def probSamePerson(self, name1, name2):
         if self.standardizeFunc:
@@ -106,11 +106,12 @@ class NameMatcher():
         # computes the probability that the two names belong to the same person.
         if len(name1) < self.ngram_len or len(name2) < self.ngram_len:
             print 'Both names should be at least', self.ngram_len, ' characters long'
-            return np.nan
-        p2given1 = self.condProbName(name1, name2)
-        p1 = self.probName(name1)
-        p2 = self.probName(name2)
-        return (p1 * p2given1)/((self.pop_size - 1) * p1 * p2 + p1 * p2given1)
+            return 0.0
+        if (name1, name2) not in self.psp_memoize:
+            self.psp_memoize = _probSamePerson(name1, name2, self.pop_size, self.edit_count, 
+                           self.total_edits, self.smoothing, self.ngram_len, 
+                           self.ngram_count, self.memoize, self.cp_memoize, 
+                           self.psp_memoize)
 
     def probUnique(self, name):
         if self.standardizeFunc:

@@ -18,30 +18,22 @@ class sdist(_sdist):
 cmdclass = { }
 cmdclass['sdist'] = sdist
 
+numpy_core_dir = ''
+#numpy_core_dir = '-I/export/home/zjelveh/.local/lib/python2.6/site-packages/numpy/core/include'
+
 ext_modules = [
-    #Extension(os.path.join('nameprobability', 'counter'), [ "nameprobability/counter.pyx" ])
-    Extension('nameprobability', [ "nameprobability/counter.pyx" ],
-        extra_compile_args=['-O3', '-g0', 
-        '-I/export/home/zjelveh/vvv/lib/python2.6/site-packages/numpy/core/include/'])
+    Extension('counter', [ "nameprobability/counter.pyx" ],
+        extra_compile_args=['-O3', '-g0', numpy_core_dir])
 ]
 cmdclass.update({ 'build_ext': build_ext })
 
-# ext_modules = cythonize([
-#    Extension(
-#        os.path.join('nameprobability', 'counter'),
-#        [os.path.join('nameprobability', 'counter.pyx')],
-#        extra_compile_args=['-O3', '-g0']
-#    )
-# ])
-# ext_modules = cythonize(os.path.join('nameprobability', 'counter'))
 
 setup(
     name='NameProbability',
-    version = '0.1.0',
+    version = '0.1.1',
     author = 'Zubin Jelveh',
     author_email='zj292@nyu.edu',
     packages=['nameprobability'],
-    #ext_modules = cythonize(["*.pyx"]),
     cmdclass =  cmdclass,
     ext_modules = ext_modules,
     data_files = [('data', ['nameprobability/sample_names.csv', 'nameprobability/ss_data.pkl'])],
@@ -49,7 +41,6 @@ setup(
     requires = [
         "Levenshtein",
         "NumPy",
-        "cPickle",
-        "name_cleaver"
+        "cPickle"
     ],
 )

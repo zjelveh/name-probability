@@ -74,6 +74,6 @@ def _probSamePerson(name1, name2, pop_size, edit_count, total_edits, smoothing,
     p2given1 = cp_memoize[name1, name2]
     try:
         psp_memoize[(name1, name2)] = (p1 * p2given1) / ((pop_size - 1.0) * p1 * p2 + p1 * p2given1)
-    except
+    except:
         psp_memoize[(name1, name2)] = 0.0
     return [psp_memoize, cp_memoize, memoize]

@@ -1,8 +1,8 @@
 import numpy as np
 import os
 from collections import defaultdict
-import Levenshtein as edist
 import cPickle
+import sys
 from counter import _editCounts, _ngramCount, _probName, _condProbName, _probSamePerson
 
 class NameMatcher():
@@ -70,8 +70,6 @@ class NameMatcher():
             self.edit_count[k] += v
 
     def probName(self, name):
-        if self.standardizeFunc:
-            name = self.standardizeFunc(name)
         # compute the probability of name based on the training data
         if len(name) < self.ngram_len:
             return 0
@@ -113,5 +111,7 @@ class NameMatcher():
 
 if __name__ == '__main__':
     pass
-
-    temp = NameProbability.NameMatcher(name_list=['abc company', 'bcd inc'], useSS=False)
+    with open('c:/name-probability/nameprobability/sample_names.csv', 'rb') as f2:
+        nl = f2.read().split('\n')
+        
+    temp = NameMatcher(name_list=nl, useSS=False)

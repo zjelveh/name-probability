@@ -1,8 +1,9 @@
 import numpy as np
 import os
 from collections import defaultdict
-import Levenshtein as edist
 import cPickle
+import sys
+sys.path.append('c:/name-probability/nameprobability/')
 from counter import _editCounts, _ngramCount, _probName, _condProbName, _probSamePerson
 
 class NameMatcher():
@@ -20,10 +21,10 @@ class NameMatcher():
         self.total_edits = 0
         self.unique = unique
         self.edit_count_max = edit_count_max
-        self.DATA_PATH = os.path.join(os.path.split(__file__)[0], "data")
-        self.memoize = {}
-        self.cp_memoize = {}
-        self.psp_memoize = {}
+        self.DATA_PATH = 1#os.path.join(os.path.split(__file__)[0], "data")
+        self.memoize = defaultdict(float)
+        self.cp_memoize = defaultdict(float)
+        self.psp_memoize = defaultdict(float)
         
         if useSS:
             with open(os.path.join(self.DATA_PATH, 'ss_data.pkl'),'rb') as ss_data:
@@ -111,5 +112,7 @@ class NameMatcher():
 
 if __name__ == '__main__':
     pass
-
-    temp = NameProbability.NameMatcher(name_list=['abc company', 'bcd inc'], useSS=False)
+    with open('c:/name-probability/nameprobability/sample_names.csv', 'rb') as f2:
+        nl = f2.read().split('\n')
+        
+    temp = NameMatcher(name_list=nl, useSS=False)

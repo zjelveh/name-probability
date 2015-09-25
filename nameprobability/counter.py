@@ -43,35 +43,32 @@ def _probName(name, ngram_len, ngram_count, smoothing, memoize):
 
 @jit
 def _condProbName(name1, name2, edit_count, total_edits, smoothing, cp_memoize):
-        # computes the conditional probability of arriving at name1
-        # by performing a series of operation on name2.
-        temp_count = {}
-        holder = 0.0
-        for k, v in edit_count.iteritems():
-            temp_count[k] = v / total_edits
-        edits = edist.editops(name1, name2)
-        for e in edits:
-            if e in temp_count:
-                holder += np.log(temp_count[e] + smoothing)
-            else:
-                holder += np.log(smoothing)
-        log_cnd_prob = np.sum(holder)
-        cp_memoize[(name1, name2)] = np.exp(log_cnd_prob)
-        return cp_memoize
+    # computes the conditional probability of arriving at name1
+    # by performing a series of operation on name2.
+    temp_count = defaultdict(float)
+    holder = 0.0
+    for k, v in edit_count.iteritems():
+        temp_count[k] = v / total_edits
+    edits = edist.editops(name1, name2)
+    for e in edits:
+        holder += np.log(temp_count[e] + smoothing)
+    log_cnd_prob = np.sum(holder)
+    cp_memoize[(name1, name2)] = np.exp(log_cnd_prob)
+    return cp_memoize
 
 @jit
 def _probSamePerson(name1, name2, pop_size, edit_count, total_edits, smoothing,
                     ngram_len, ngram_count, memoize, cp_memoize, psp_memoize):
     # computes the probability that the two names belong to the same person.
-    if (name1, name2) not in cp_memoize:
+    if cp_memoize[(name1, name2)]:
         cp_memoize = _condProbName(name1, name2, edit_count, total_edits, smoothing, cp_memoize)
-    if name1 not in memoize:
+    if memoize[name1]:
         memoize = _probName(name1, ngram_len, ngram_count, smoothing, memoize)
-    if name2 not in memoize:
+    if memoize[name2]:
         memoize = _probName(name2, ngram_len, ngram_count, smoothing, memoize)
     p1 = memoize[name1]
     p2 = memoize[name2]
-    p2given1 = cp_memoize[name1, name2]
+    p2given1 = cp_memoize[(name1, name2)]
     if ((pop_size - 1.0) * p1 * p2 + p1 * p2given1):
         psp_memoize[(name1, name2)] = (p1 * p2given1) / ((pop_size - 1.0) * p1 * p2 + p1 * p2given1)
     else:

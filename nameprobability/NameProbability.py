@@ -70,8 +70,6 @@ class NameMatcher():
             self.edit_count[k] += v
 
     def probName(self, name):
-        if self.standardizeFunc:
-            name = self.standardizeFunc(name)
         # compute the probability of name based on the training data
         if len(name) < self.ngram_len:
             return 0

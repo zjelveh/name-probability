@@ -6,7 +6,7 @@ from distutils.core import setup
 
 setup(
     name='NameProbability',
-    version = '0.1.1',
+    version = '0.5.1',
     author = 'Zubin Jelveh',
     author_email='zj292@nyu.edu',
     packages=['nameprobability'],
@@ -15,6 +15,7 @@ setup(
     requires = [
         "Levenshtein",
         "NumPy",
-        "cPickle"
+        "cPickle",
+        "Numba"
     ],
 )

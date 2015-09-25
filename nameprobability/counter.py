@@ -31,7 +31,7 @@ def _ngramCount(name_list, ngram_len):
             ngram_count[name_list[i][(start + 1):(start + ngram_len)]] += 1
     return ngram_count
 
-@jit
+#@jit
 def _probName(name, ngram_len, ngram_count, smoothing, memoize):
     log_prob = 0.0
     for start in range(len(name) - (ngram_len - 1)):
@@ -41,7 +41,7 @@ def _probName(name, ngram_len, ngram_count, smoothing, memoize):
     memoize[name] = np.exp(log_prob)
     return memoize
 
-@jit
+#@jit
 def _condProbName(name1, name2, edit_count, total_edits, smoothing, cp_memoize):
     # computes the conditional probability of arriving at name1
     # by performing a series of operation on name2.
@@ -56,16 +56,16 @@ def _condProbName(name1, name2, edit_count, total_edits, smoothing, cp_memoize):
     cp_memoize[(name1, name2)] = np.exp(log_cnd_prob)
     return cp_memoize
 
-@jit
+#@jit
 def _probSamePerson(name1, name2, pop_size, edit_count, total_edits, smoothing,
                     ngram_len, ngram_count, memoize, cp_memoize, psp_memoize):
     # computes the probability that the two names belong to the same person.
-    if cp_memoize[(name1, name2)]:
-        cp_memoize = _condProbName(name1, name2, edit_count, total_edits, smoothing, cp_memoize)
-    if memoize[name1]:
+    if not memoize[name1]:
         memoize = _probName(name1, ngram_len, ngram_count, smoothing, memoize)
-    if memoize[name2]:
+    if not memoize[name2]:
         memoize = _probName(name2, ngram_len, ngram_count, smoothing, memoize)
+    if not cp_memoize[(name1, name2)]:
+        cp_memoize = _condProbName(name1, name2, edit_count, total_edits, smoothing, cp_memoize)
     p1 = memoize[name1]
     p2 = memoize[name2]
     p2given1 = cp_memoize[(name1, name2)]

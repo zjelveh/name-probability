@@ -42,7 +42,6 @@ class NameMatcher():
             # crude measure of population size
             self.pop_size += len(name_list)
             self.ngramCount(name_list)
-            print "Starting editCounts"
             self.editCounts(name_list)
 
     def ngramCount(self, name_list):

@@ -1,14 +1,11 @@
 import numpy as np
 import os
 from collections import defaultdict
-import cPickle
-import sys
-sys.path.append('c:/name-probability/nameprobability/')
 from counter import _editCounts, _ngramCount, _probName, _condProbName, _probSamePerson
 
 class NameMatcher():
-    def __init__(self, name_list=None, ngram_len=5, smoothing=.001, unique=True, 
-        useSS=True, edit_count_max=None):
+    def __init__(self, name_list=None, ngram_len=5, smoothing=.001, unique=False, 
+        useSS=False, edit_count_max=None):
         '''
         - edit_count_max is used to limit the number of samples to consider
         when computing edit operation counts
@@ -25,13 +22,6 @@ class NameMatcher():
         self.memoize = defaultdict(float)
         self.cp_memoize = defaultdict(float)
         self.psp_memoize = defaultdict(float)
-        
-        if useSS:
-            with open(os.path.join(self.DATA_PATH, 'ss_data.pkl'),'rb') as ss_data:
-                print 'Loading Social Security Data'
-                self.ngram_count, self.edit_count = cPickle.load(ss_data)
-                self.pop_size = 24e6
-                self.total_edits += sum(self.edit_count.itervalues())
 
         if name_list:
             if not isinstance(name_list, list):
@@ -41,8 +31,8 @@ class NameMatcher():
 
             # crude measure of population size
             self.pop_size += len(name_list)
-            self.ngramCount(name_list)
-            self.editCounts(name_list)
+#            self.ngramCount(name_list)
+#            self.editCounts(name_list)
 
     def ngramCount(self, name_list):
         ngram_count = _ngramCount(name_list, self.ngram_len)

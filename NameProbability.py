@@ -28,6 +28,7 @@ class NameMatcher():
         self.psp_memoize = defaultdict(float)
         self.name_list_location = name_list_location
         self.save_location = save_location
+        self.name_list = name_list
 
         if not name_list and not name_list_location and not use_SS:
             raise Exception('Need either a name list, location to name list, or to use SS data')

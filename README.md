@@ -6,20 +6,21 @@ This repo implements the disambiguation methodology outlined in "<a href="http:/
 Usage
 --------------
 ```python
->>> import nameprobability.NameProbability as nm
->>> nameprob = nm.NameMatcher()
-Loading Social Security Data
-Done
->>> nameprob.probSamePerson('smith, john','smith, john r')
->>> 0.0029767677513424344
->>> nameprob.probSamePerson('jelveh, zubin','jelveh, zubin r')
->>> 0.99999999999999689
+>>> from NameProbability import NameMatcher
+>>> name_list_src = '~/NameProbability/sample_names.csv'
+>>> nameprob = NameMatcher(name_list_location=name_list_src, last_comma_first=True)
+>>> nameprob.probSamePerson('john smith', 'john r smith')
+>>> 0.008288431595531668
+>>> nameprob.probSamePerson('zubin jelveh', 'zubin r jelveh')
+>>> 0.999999999999234634
 ```
+
+
 
 Installation
 --------------
 ```
-python setup.py install --user
+python setup.py install
 ```
 
 Training Data

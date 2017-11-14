@@ -1,11 +1,14 @@
 import numpy as np
 import os
 from collections import defaultdict
+import pickle
 from counter import _editCounts, _ngramCount, _probName, _condProbName, _probSamePerson
+import argparse
 
 class NameMatcher():
     def __init__(self, name_list=None, ngram_len=5, smoothing=.001, unique=False, 
-        useSS=False, edit_count_max=None):
+        edit_count_max=None, last_comma_first=False, name_list_location=None,
+        save_location=None):
         '''
         - edit_count_max is used to limit the number of samples to consider
         when computing edit operation counts
@@ -17,35 +20,41 @@ class NameMatcher():
         self.pop_size = 0
         self.total_edits = 0
         self.unique = unique
+        self.last_comma_first = last_comma_first
         self.edit_count_max = edit_count_max
-        self.DATA_PATH = 1#os.path.join(os.path.split(__file__)[0], "data")
+        self.DATA_PATH = 1 #os.path.join(os.path.split(__file__)[0], "data")
         self.memoize = defaultdict(float)
         self.cp_memoize = defaultdict(float)
         self.psp_memoize = defaultdict(float)
+        self.name_list_location = name_list_location
+        self.save_location = save_location
 
-        if name_list:
-            if not isinstance(name_list, list):
-                name_list = list(name_list)
-            if self.unique:
-                name_list = list(set(name_list))
+        if not name_list and not name_list_location:
+            raise Exception('Need either a name list or location to name list')
+        if name_list and name_list_location:
+            raise Exception('Only one of name_list or name_list_location can be provided')
 
-            # crude measure of population size
-            self.pop_size += len(name_list)
-#            self.ngramCount(name_list)
-#            self.editCounts(name_list)
+        if name_list_location:
+            self.loadNameList()
+
+        if not isinstance(name_list, list):
+            self.name_list = list(self.name_list)
+        if self.unique:
+            self.name_list = list(set(self.name_list))
+        if self.last_comma_first:
+            for i, n in enumerate(self.name_list):
+                rev_name = n.split(', ')
+                rev_name = rev_name[1] + ' ' + rev_name[0]
+                self.name_list[i] = rev_name
+
+        self.pop_size += len(self.name_list)
+        self.ngramCount(self.name_list)
+        self.editCounts(self.name_list)
 
     def ngramCount(self, name_list):
-        ngram_count = _ngramCount(name_list, self.ngram_len)
-        for k, v in ngram_count.iteritems():
-            self.ngram_count[k] += v
-
-    def updateCounts(self, name_list):
-        if self.unique:
-            name_list = list(set(name_list))
-        self.pop_size += len(name_list)
-        self.ngramCount(name_list)
-        self.editCounts(name_list)
-
+        self.ngram_count = _ngramCount(name_list, self.ngram_len)
+    
+    
     def editCounts(self, name_list):
         # to compute probability of edit operations use a subsample of names
         if self.edit_count_max:
@@ -59,13 +68,16 @@ class NameMatcher():
         for k, v in edit_count.iteritems():
             self.edit_count[k] += v
 
+
     def probName(self, name):
         # compute the probability of name based on the training data
         if len(name) < self.ngram_len:
             return 0
         if name not in self.memoize:
-            self.memoize = _probName(name, self.ngram_len, self.ngram_count, self.smoothing, self.memoize)
+            self.memoize = _probName(name, self.ngram_len, self.ngram_count, 
+                                     self.smoothing, self.memoize)
         return self.memoize[name]
+
 
     def condProbName(self, name1, name2):
         # computes the conditional probability of arriving at name1
@@ -75,10 +87,11 @@ class NameMatcher():
                                             self.smoothing, self.cp_memoize)
         return self.cp_memoize[(name1, name2)]
 
+
     def probSamePerson(self, name1, name2):
         # computes the probability that the two names belong to the same person.
         if len(name1) < self.ngram_len or len(name2) < self.ngram_len:
-            print 'Both names should be at least', self.ngram_len, ' characters long'
+            print('Both names should be at least', self.ngram_len, ' characters long')
             return 0.0
         if (name1, name2) not in self.psp_memoize:
             self.psp_memoize, self.cp_memoize, self.memoize = _probSamePerson(name1,
@@ -87,6 +100,7 @@ class NameMatcher():
                            self.ngram_count, self.memoize, self.cp_memoize,
                            self.psp_memoize)
         return self.psp_memoize[(name1, name2)]
+
 
     def probUnique(self, name):
         # compute the probability that a name is unique in the data
@@ -99,9 +113,43 @@ class NameMatcher():
         with open(os.path.join(self.DATA_PATH, 'sample_names.csv'), 'rb') as f:
             self.updateCounts(f.read().split('\n'))
 
-if __name__ == '__main__':
-    pass
-    with open('c:/name-probability/nameprobability/sample_names.csv', 'rb') as f2:
-        nl = f2.read().split('\n')
+    def saveObject(self):
+        with open(self.save_location, 'w') as f:
+            pickle.dump(temp, f)
+
+    def loadNameList(self):
+        with open(self.name_list_location, 'rb') as f2:
+            self.name_list = f2.read().split('\n')
         
-    temp = NameMatcher(name_list=nl, useSS=False)
+
+
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--name_list_location', help='Path to name list', 
+                        type=str, required=True)
+    parser.add_argument('--ngram_len', help='Length of ngram for probability calculation, default = 5',
+                        type=int, default=5)
+    parser.add_argument('--smoothing', help='Smoothing factor, default = 0.001', 
+                        type=float, default=0.001)
+    parser.add_argument('--unique', help='0 = names are non-unique, 1 = names should be considered unique, default = 0', 
+                        type=int, default=0)
+    parser.add_argument('--last_comma_first', help='0 = names in "first last" format, 1 = names in "last, first" format, default = 1', 
+                        type=int, default=1)
+    parser.add_argument('--edit_count_max', help='number of names to use to estimate edit probabilities', 
+                        type=int)
+    parser.add_argument('--save_location', help='file path for pickled dump', 
+                        type=str)
+    args = parser.parse_args()
+
+    temp = NameMatcher(ngram_len=args.ngram_len, 
+                       smoothing=args.smoothing, 
+                       unique=args.unique,
+                       edit_count_max=args.edit_count_max, 
+                       last_comma_first=args.last_comma_first,
+                       name_list_location = args.name_list_location,
+                       save_location=args.save_location)
+
+    if args.save_location:
+        temp.saveObject()

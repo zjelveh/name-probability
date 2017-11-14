@@ -3,6 +3,7 @@ import numpy as np
 from collections import defaultdict
 from numba import jit
 
+
 @jit
 def _editCounts(name_samp):
     # to compute probability of edit operations use a subsample of names
@@ -20,16 +21,19 @@ def _editCounts(name_samp):
                     edit_count[edits[k]] += 1
     return edit_count, total_edits
 
+
 @jit
 def _ngramCount(name_list, ngram_len):
     ngram_count = defaultdict(int)
     for i in range(len(name_list)):
-        if len(name_list[i]) > ngram_len - 1:
-            for start in range(len(name_list[i]) - (ngram_len-1)):
-                ngram_count[name_list[i][start:(start + ngram_len)]] += 1
-                ngram_count[name_list[i][start:((start + ngram_len)-1)]] += 1
-            ngram_count[name_list[i][(start + 1):(start + ngram_len)]] += 1
+        current_name = name_list[i]
+        if len(current_name) > ngram_len - 1:
+            for start in range(len(current_name) - (ngram_len - 1)):
+                ngram_count[current_name[start:(start + ngram_len)]] += 1
+                ngram_count[current_name[start:((start + ngram_len)-1)]] += 1
+            ngram_count[current_name[-(ngram_len - 1):]] += 1
     return ngram_count
+
 
 @jit
 def _probName(name, ngram_len, ngram_count, smoothing, memoize):
@@ -40,6 +44,7 @@ def _probName(name, ngram_len, ngram_count, smoothing, memoize):
         log_prob += np.log(numer / denom)
     memoize[name] = np.exp(log_prob)
     return memoize
+
 
 @jit
 def _condProbName(name1, name2, edit_count, total_edits, smoothing, cp_memoize):
@@ -55,6 +60,7 @@ def _condProbName(name1, name2, edit_count, total_edits, smoothing, cp_memoize):
     log_cnd_prob = np.sum(holder)
     cp_memoize[(name1, name2)] = np.exp(log_cnd_prob)
     return cp_memoize
+
 
 @jit
 def _probSamePerson(name1, name2, pop_size, edit_count, total_edits, smoothing,

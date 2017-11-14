@@ -1,6 +1,6 @@
 import os
 import sys
-from setuptools import setup,Extension
+from setuptools import setup, Extension
 
 from distutils.core import setup
 
@@ -9,13 +9,12 @@ setup(
     version = '0.5.1',
     author = 'Zubin Jelveh',
     author_email='zj292@nyu.edu',
-    packages=['nameprobability'],
-    data_files = [('data', ['nameprobability/sample_names.csv', 'nameprobability/ss_data.pkl'])],
+    packages=[''],
+    data_files = [('data', ['sample_names.csv'])],
     description = 'Name matching tool',
     requires = [
         "Levenshtein",
         "NumPy",
-        "cPickle",
         "Numba"
     ],
 )

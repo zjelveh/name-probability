@@ -6,9 +6,9 @@ from counter import _editCounts, _ngramCount, _probName, _condProbName, _probSam
 import argparse
 
 class NameMatcher():
-    def __init__(self, name_list=None, ngram_len=5, smoothing=.001, unique=False, 
-        edit_count_max=None, last_comma_first=False, name_list_location=None,
-        save_location=None):
+    def __init__(self, name_list=None, ngram_len=5, smoothing=.001, unique=0, 
+        edit_count_max=None, last_comma_first=0, name_list_location=None,
+        save_location=None, use_SS=0):
         '''
         - edit_count_max is used to limit the number of samples to consider
         when computing edit operation counts
@@ -33,19 +33,29 @@ class NameMatcher():
             raise Exception('Need either a name list or location to name list')
         if name_list and name_list_location:
             raise Exception('Only one of name_list or name_list_location can be provided')
+        name_list_provided = True if name_list or name_list_location else False
 
-        if name_list_location:
-            self.loadNameList()
+        if name_list_provided:
+            if name_list_location:
+                self.loadNameList()
 
-        if not isinstance(name_list, list):
-            self.name_list = list(self.name_list)
-        if self.unique:
-            self.name_list = list(set(self.name_list))
-        if self.last_comma_first:
-            for i, n in enumerate(self.name_list):
-                rev_name = n.split(', ')
-                rev_name = rev_name[1] + ' ' + rev_name[0]
-                self.name_list[i] = rev_name
+            if not isinstance(name_list, list):
+                self.name_list = list(self.name_list)
+            if self.unique:
+                self.name_list = list(set(self.name_list))
+            if self.last_comma_first:
+                for i, n in enumerate(self.name_list):
+                    rev_name = n.split(', ')
+                    rev_name = rev_name[1] + ' ' + rev_name[0]
+                    self.name_list[i] = rev_name
+
+        if not name_list_provided and not use_SS:
+            raise Exception('No training data provided. Use either a custom name list or the Social Security data')
+
+        if not name_list_provided and use_SS:
+            with open('ss_data.pkl', 'r') as f:
+                name_list = pickle.load(f)
+
 
         self.pop_size += len(self.name_list)
         self.ngramCount(self.name_list)
@@ -123,8 +133,6 @@ class NameMatcher():
         
 
 
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--name_list_location', help='Path to name list', 
@@ -139,6 +147,9 @@ if __name__ == '__main__':
                         type=int, default=1)
     parser.add_argument('--edit_count_max', help='number of names to use to estimate edit probabilities', 
                         type=int)
+    parser.add_argument('--use_SS', help='1 = use SS data to for training, default=0',
+                        type=int)
+
     parser.add_argument('--save_location', help='file path for pickled dump', 
                         type=str)
     args = parser.parse_args()
@@ -149,7 +160,8 @@ if __name__ == '__main__':
                        edit_count_max=args.edit_count_max, 
                        last_comma_first=args.last_comma_first,
                        name_list_location = args.name_list_location,
-                       save_location=args.save_location)
+                       save_location=args.save_location,
+                       use_SS=args.use_SS)
 
     if args.save_location:
         temp.saveObject()

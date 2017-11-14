@@ -7,7 +7,9 @@ Usage
 --------------
 ```python
 >>> from NameProbability import NameMatcher
->>> name_list_src = '~/NameProbability/data/sample_names.csv'
+>>> name_list_src = '#LOCATION OF NAME LIST FILE' # or use sample_names.csv in data directory
+>>> # for custom name list, expects text file with each row containing string for a person's name
+>>> # currently only been tested with "first last" or "last, first" name formats
 >>> nameprob = NameMatcher(name_list_location=name_list_src, last_comma_first=True)
 >>> nameprob.probSamePerson('john smith', 'john r smith')
 >>> 0.008288431595531668

@@ -23,10 +23,10 @@ Installation
 python setup.py install
 ```
 
-Training Data
+<!-- Training Data
 --------------
 
-The conditional probabilities are computed using roughly 28 million names from the Social Security Death Master file with the obvious downside that newer names are under-represented.
+The conditional probabilities are computed using roughly 28 million names from the Social Security Death Master file with the obvious downside that newer names are under-represented. -->
 
 Edit Operation Probability
 --------------

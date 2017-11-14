@@ -7,7 +7,7 @@ Usage
 --------------
 ```python
 >>> from NameProbability import NameMatcher
->>> name_list_src = '~/NameProbability/sample_names.csv'
+>>> name_list_src = '~/NameProbability/data/sample_names.csv'
 >>> nameprob = NameMatcher(name_list_location=name_list_src, last_comma_first=True)
 >>> nameprob.probSamePerson('john smith', 'john r smith')
 >>> 0.008288431595531668

@@ -41,6 +41,8 @@ def _probName(name, ngram_len, ngram_count, smoothing, memoize):
     for start in range(len(name) - (ngram_len - 1)):
         numer = ngram_count[name[start:(start + ngram_len)]] + smoothing
         denom = ngram_count[name[start:(start + ngram_len)-1]] + smoothing
+        if not denom:
+            denom += .000001 # avoid div by zero error
         log_prob += np.log(numer / denom)
     memoize[name] = np.exp(log_prob)
     return memoize

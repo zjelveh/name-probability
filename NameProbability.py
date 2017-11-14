@@ -29,8 +29,8 @@ class NameMatcher():
         self.name_list_location = name_list_location
         self.save_location = save_location
 
-        if not name_list and not name_list_location:
-            raise Exception('Need either a name list or location to name list')
+        if not name_list and not name_list_location and not use_SS:
+            raise Exception('Need either a name list, location to name list, or to use SS data')
         if name_list and name_list_location:
             raise Exception('Only one of name_list or name_list_location can be provided')
         name_list_provided = True if name_list or name_list_location else False
@@ -49,17 +49,23 @@ class NameMatcher():
                     rev_name = rev_name[1] + ' ' + rev_name[0]
                     self.name_list[i] = rev_name
 
+            self.pop_size += len(self.name_list)
+            self.ngramCount(self.name_list)
+            self.editCounts(self.name_list)
+
         if not name_list_provided and not use_SS:
             raise Exception('No training data provided. Use either a custom name list or the Social Security data')
 
         if not name_list_provided and use_SS:
-            with open('ss_data.pkl', 'r') as f:
-                name_list = pickle.load(f)
+            import pkg_resources
+            DATA_PATH = pkg_resources.resource_filename('NameProbability', 'data/ss_data.pkl')
+            with open(DATA_PATH, 'r') as f:
+                ss_data = pickle.load(f)
+                self.ngram_count = ss_data[0]
+                self.edit_count = ss_data[1]
+                self.pop_size = 25e6
+                self.total_edits = sum(v for v in self.edit_count.itervalues())
 
-
-        self.pop_size += len(self.name_list)
-        self.ngramCount(self.name_list)
-        self.editCounts(self.name_list)
 
     def ngramCount(self, name_list):
         self.ngram_count = _ngramCount(name_list, self.ngram_len)
@@ -118,10 +124,6 @@ class NameMatcher():
 
     def surprisal(self, name):
         return -np.log2(self.probUnique(name))
-
-    def loadRandom(self):
-        with open(os.path.join(self.DATA_PATH, 'sample_names.csv'), 'rb') as f:
-            self.updateCounts(f.read().split('\n'))
 
     def saveObject(self):
         with open(self.save_location, 'w') as f:

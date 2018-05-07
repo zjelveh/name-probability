@@ -127,7 +127,7 @@ class NameMatcher():
         return -np.log2(self.probUnique(name))
 
     def saveObject(self):
-        with open(self.save_location, 'wb') as f:
+        with open(self.save_location, 'w') as f:
             pickle.dump(temp, f)
 
     def loadNameList(self):

@@ -54,7 +54,7 @@ def _condProbName(name1, name2, edit_count, total_edits, smoothing, cp_memoize):
     # by performing a series of operation on name2.
     temp_count = defaultdict(float)
     holder = 0.0
-    for k, v in edit_count.iteritems():
+    for k, v in edit_count.items():
         temp_count[k] = v / total_edits
     edits = edist.editops(name1, name2)
     for e in edits:

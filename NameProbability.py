@@ -82,7 +82,7 @@ class NameMatcher():
             name_samp = name_list
         edit_count, total_edits = _editCounts(name_samp)
         self.total_edits += total_edits
-        for k, v in edit_count.iteritems():
+        for k, v in edit_count.items():
             self.edit_count[k] += v
 
 
@@ -131,7 +131,7 @@ class NameMatcher():
             pickle.dump(temp, f)
 
     def loadNameList(self):
-        with open(self.name_list_location, 'rb') as f2:
+        with open(self.name_list_location, 'r') as f2:
             self.name_list = f2.read().split('\n')
         
 
